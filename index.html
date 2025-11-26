@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><title>Hacker Clicker</title>
+<style>
+body{margin:0;background:#000;color:#0f6;font-family:monospace}
+header{padding:8px;background:#010;color:#2f9;display:flex;justify-content:space-between}
+.hud{display:flex;gap:15px;padding:8px;background:#001;border-bottom:1px solid #033}
+.console{padding:8px;height:calc(100vh - 150px);overflow-y:auto}
+.line{margin:2px 0}.time{color:#0a5;margin-right:6px}
+.cursor{display:inline-block;width:8px;height:1em;background:#0f6;margin-left:6px;animation:blink 1s step-end infinite}
+@keyframes blink{0%,49%{opacity:1}50%,100%{opacity:0}}
+button{background:#021;color:#0f6;border:1px solid #033;border-radius:4px;padding:4px 8px;cursor:pointer}
+button:hover{border-color:#2f9}
+.arrow-btn{position:fixed;top:50%;right:0;transform:translateY(-50%);background:#021;border:1px solid #033;border-radius:4px 0 0 4px;padding:4px;color:#0f6;cursor:pointer}
+.panel,.achBoard{position:fixed;transition:.3s;padding:8px;background:#010;border:2px solid #033;box-sizing:border-box}
+.panel{top:0;right:-280px;width:280px;height:100%}.panel.open{right:0}
+.achBoard{bottom:-250px;left:0;width:280px;height:250px;overflow-y:auto}.achBoard.open{bottom:0}
+.close{background:none;border:none;color:#0f6;font-size:16px;cursor:pointer}
+.achievement{margin:6px 0;padding:4px;border:1px solid #033;background:#021}
+.locked{color:#555}
+</style>
+</head>
+<body>
+<header>▶ Hacker Clicker <button id="achBtn">Achievements</button></header>
+<div class="hud"><div><b>Keystrokes:</b> <span id="count">0</span></div><div><b>Words:</b> <span id="words">0</span></div><div><b>Per Click:</b> <span id="perClick">1</span></div><div><b>Combo:</b> <span id="combo">0</span></div></div>
+<div id="console" class="console"><span class="cursor"></span></div>
+<div class="arrow-btn" id="arrow">▶</div>
+<div class="panel" id="panel"><h3>Upgrades <button class="close" id="closeP">✖</button></h3>
+<div class="achievement">+10 per click (100)<button onclick="buy(100,10)">Buy</button></div>
+<div class="achievement">+150 per click (1000)<button onclick="buy(1000,150)">Buy</button></div>
+<div class="achievement">+1000 per click (10000)<button onclick="buy(10000,1000)">Buy</button></div></div>
+<div class="achBoard" id="achBoard"><h3>Achievements <button class="close" id="closeA">✖</button></h3><div id="achList"></div></div>
+<script>
+let c=0,w=0,pc=1,combo=0,last=0;const consoleEl=document.getElementById("console"),phrases=["Hacking...","Encrypting...","Scanning...","Streaming..."];
+const achs={"First Phrase Click":["Easy","Earned by clicking one time"],"Combo 50":["Easy","Get a combo of 50"],"Spammer":["Easy","Spam fast"],"1000 Words":["Med","Reach 1000"],"Combo 1000":["Med","Get combo 1000"],"500k Words":["Hard","Reach 500000"],"Real Luck":["Hard","Jackpot phrase"]},unlocked={};
+// Load saved state
+(function load(){let s=JSON.parse(localStorage.getItem("hackerSave")||"{}");c=s.c||0;w=s.w||0;pc=s.pc||1;combo=0;Object.assign(unlocked,s.unlocked||{});updateHUD();renderAch()})();
+function save(){localStorage.setItem("hackerSave",JSON.stringify({c,w,pc,unlocked}))}
+function updateHUD(){document.getElementById("count").textContent=c;document.getElementById("words").textContent=w;document.getElementById("perClick").textContent=pc;document.getElementById("combo").textContent=combo}
+function time(){let d=new Date();return [d.getHours(),d.getMinutes(),d.getSeconds()].map(n=>String(n).padStart(2,"0")).join(":")}
+function line(t){let l=document.createElement("div");l.className="line";l.innerHTML=`<span class="time">[${time()}]</span>${t}`;consoleEl.insertBefore(l,document.querySelector(".cursor"));consoleEl.scrollTop=consoleEl.scrollHeight}
+function key(){c++;w+=pc;combo=(performance.now()-last<500)?combo+1:1;last=performance.now();updateHUD();let jackpot=Math.random()<0.01;if(jackpot){line("You hit the Jackpot!!");unlock("Real Luck");document.getElementById("achBoard").classList.add("open")}else line(phrases[Math.floor(Math.random()*phrases.length)]);
+if(c==1)unlock("First Phrase Click");if(combo>=50)unlock("Combo 50");if(combo>=1000)unlock("Combo 1000");if(w>=1000)unlock("1000 Words");if(w>=500000)unlock("500k Words");if(combo>=20&&performance.now()-last<200)unlock("Spammer");save()}
+function buy(cost,bonus){if(w>=cost){w-=cost;pc+=bonus;line(`Upgrade +${bonus} per click`);updateHUD();unlock("Upgrade");save()}else line("Not enough words")}
+function unlock(name){if(!unlocked[name]){unlocked[name]=true;line(`Achievement unlocked: ${name}`);renderAch();save()}}
+function renderAch(){let l=document.getElementById("achList");l.innerHTML="";for(let k in achs){let d=achs[k],u=unlocked[k];l.innerHTML+=`<div class="achievement ${u?"":"locked"}">${k} (${d[0]}) - ${d[1]}</div>`}}
+window.addEventListener("keydown",e=>{if(e.code==="Space")e.preventDefault();key()});
+document.getElementById("arrow").onclick=()=>panel.classList.add("open");document.getElementById("closeP").onclick=()=>panel.classList.remove("open");
+document.getElementById("achBtn").onclick=()=>achBoard.classList.add("open");document.getElementById("closeA").onclick=()=>achBoard.classList.remove("open");
+line("Booting console...");setTimeout(()=>line("Press any key to begin."),500);
+</script>
+</body>
+</html>
